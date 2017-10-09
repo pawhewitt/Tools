@@ -6,18 +6,19 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2 # import all the python scripts in /usr/local/SU2_RUN/SU2_PY/SU2
 import numpy as np
 import matplotlib.pyplot as plt
+import cPickle as pickle
 
 def Main():
 
 	parser=OptionParser()
-	parser.add_option("--d1",dest="design1")
-	parser.add_option("--d2",dest="design2")
+	parser.add_option("-a",dest="design1")
+	parser.add_option("-b",dest="design2")
 	(options,args)=parser.parse_args()
-	design1=options.design1
-	design2=options.design2
+	a=int(options.design1)
+	b=int(options.design2)
 
-	path1="./DESIGNS/DSN_{:03d}/".format(int(design1))
-	path2="./DESIGNS/DSN_{:03d}/".format(int(design2))
+	path1="./DESIGNS/DSN_{:03d}/".format(a)
+	path2="./DESIGNS/DSN_{:03d}/".format(b)
 
 	config_data=Read_Config(path1)
 
@@ -25,10 +26,10 @@ def Main():
 	Design1=Read_Mesh(config_data,path1)
 	Design2=Read_Mesh(config_data,path2)
 	# Plot the Geometries
-	Plot_Designs(Design1,Design2)
+	Plot_Designs(a,b,Design1,Design2)
 
 	# Plot the obf_f and constraints 
-	#Plot_Funcs(design)
+	Plot_Funcs(a,b)
 
 def Read_Config(path1):
 	config_data=SU2.io.config.Config(path1+"/config_DSN.cfg")
@@ -60,27 +61,46 @@ def Read_Mesh(config_data,path):
 
 	return Coords
 
-def Plot_Designs(Design1,Design2):
+def Plot_Designs(a,b,Design1,Design2):
 	design1=np.transpose(Design1)
 	design2=np.transpose(Design2)
-	plt.plot(design1[0],design1[1])
-	plt.plot(design2[0],design2[1])
-	plt.show()
+	plt.plot(design1[0],design1[1],'g',lw=2,label='Design'+str(a))
+	plt.plot(design2[0],design2[1],'b',lw=2,label='Design'+str(b))
+	plt.grid()
+	plt.legend()
+	plt.title('Geometry Change')
+	plt.savefig('Geometry_Changes'+str(a)+'_to_'+str(b)+'.png',dpi=150)
+	plt.close()
+
 
 	return
 
 
 
-def Plot_Funcs(design):
+def Plot_Funcs(a,b):
+	results=SU2.io.load_data('results.pkl')
+	lift=results.FUNCTIONS.LIFT[(a-1):(b)]
+	drag=results.FUNCTIONS.DRAG[(a-1):(b)]
+
+	fig,ax1=plt.subplots()
+	ax2=ax1.twinx()
+	ax1.plot(lift,'g-',lw=3)
+	ax2.plot(drag,'b-',lw=3)
+	ax1.set_xlabel('Design number')
+	ax1.set_ylabel('Cl',color='g')
+	ax2.set_ylabel('Cd',color='b')
+	ax1.grid()
+	plt.title('Function Change')
+
+	major_ticks = np.arange(plt.xlim()[1])
+	ax1.set_xticks(major_ticks)                                                                                                          
+	
+
+
+	plt.savefig('Function_Changes_Design'+str(a)+'_to_'+str(b)+'.png',dpi=150)
+	plt.close()
+
 	return
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
 	Main()
