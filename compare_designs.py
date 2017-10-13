@@ -11,8 +11,8 @@ import cPickle as pickle
 def Main():
 
 	parser=OptionParser()
-	parser.add_option("-a",dest="design1")
-	parser.add_option("-b",dest="design2")
+	parser.add_option("-a",dest="design1",help="Number of the first design")
+	parser.add_option("-b",dest="design2",help="Number of the second design")
 	(options,args)=parser.parse_args()
 	a=int(options.design1)
 	b=int(options.design2)
