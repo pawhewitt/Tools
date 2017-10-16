@@ -17,21 +17,20 @@ def main():
 	# Design path
 	path="./DESIGNS/DSN_{:03d}/".format(design)
 	# Create a folder to store the plots
-	Results_Folder(design)
+	#Results_Folder(design)
 	# Read config
 
 	# To do --- No need to read in config or mesh, the surface_flow
 	## file has the coords as well. Check that these coords are actaully 
 	# the new ones. 
-	config=Read_Config(path)
 	# Get all the required data
-	data=Get_Design(config,path)
+	data=Get_Design(path)
 	#print data
-	# Plot the geometric and adjoint sensitivities
-	Plot_Sens(path)
-	# Plot the current gradient
-	Plot_Grad(path)
-	# Plot the geometry
+	# Plot the geometric and adjoint sensitivities if available
+	#Plot_Sens(path)
+	# Plot the current gradient if available
+	#Plot_Grad(path)
+	# Plot the geometry and pressure
 	#Plot_Pressure(path)
 	# Plot the convergence history of the adjoint, Cl and Cd
 	Plot_History(path)
@@ -44,52 +43,70 @@ def Read_Config(path):
 	config=SU2.io.config.Config(path+"DIRECT/config_CFD.cfg")
 	return config
 
-def Get_Design(config,path):
-	coords=Read_Mesh(config,path)
+def Get_Design(path):
 	pressure=Get_Pressure(path)
-	data={'coords':coords}
+	# Check if gradient info is avaiable for this design
+	# Need to generalise this for all Obj_f
+	if os.path.isdir(path+'ADJOINT_DRAG'):
+		path=path+'ADJOINT_DRAG'
+		Sens=Get_Sens(path)
+	elif os.path.isdir(path+'ADJOINT_LIFT'):
+		path=path+'ADJOINT_LIFT'
+		Sens=Get_Sens(path)
+	data={'pressure':pressure}
+
 	return data
 
 
-def Plot_Sens(path):
+def Get_Sens(path):
+	sens_geo=[]
+
+	# Get the Gradient
+	with open(path+'/of_grad_cd.vtk') as f:
+		csvread=csv.reader(f)
+		# Skip Headers
+		next(csvread,None)
+		sens_grad=[]
+		for row in csvread:
+			sens_grad.append(row[1])
+
+	# Get the Adjoint Sens
+	with open(path+'/surface_adjoint.csv') as f:
+		csvread=csv.reader(f)
+		# skip header
+		next(csvread,None)
+		next(csvread,None)
+		sens_adj=[]
+		for row in csvread:
+			sens_adj.append(row[1])
+	# Get the Geometric Sensitivities
+	
+
+	#Sens=np.column_stack((sens_geo,sens_adj,sens_grad))
+
 	return
 
 def Plot_Grad(path):
 	return
 def Get_Pressure(path):
 	with open(path+"DIRECT/surface_flow.csv") as f:
-		pressure=csv.reader(f)
-		for i in pressure:
-			print i
-	print pressure
+		csvread=csv.reader(f)
+		# Skip the headers
+		next(csvread,None)
+		x=[]
+		y=[]
+		pressure=[]
+		for row in csvread:
+			x.append(row[1])
+			y.append(row[2])
+			pressure.append(row[4])
+		# Merge arrays into a matrix
+		pressure=np.column_stack((x,y,pressure))
 	return pressure
 
 	return
 def Plot_History(path):
 	return
-
-def Read_Mesh(config,path):
-
-	# get name of surface marker (airfoil, AIRFOIL etc)
-	marker=config['DEFINITION_DV']['MARKER'][0][0]
-	mesh=path+config['MESH_FILENAME']
-	# # Using the Su2 python scripts for reading mesh
-	Meshdata=SU2.mesh.tools.read(mesh) # read the mesh
-
-	# sort airfoil coords to be arrange clockwise from trailing edge
-	Points,Loop=SU2.mesh.tools.sort_airfoil(Meshdata,marker)
-
-	# get the points for the surface marker
-	Foil_Points,Foil_Nodes=SU2.mesh.tools.get_markerPoints(Meshdata,marker)
-
-	#Get the sorted points 
-	Coords=np.zeros([len(Points),2])
-	for i in range(len(Points)):
-		Coords[i][0]=Foil_Points[Loop[i]][0]
-		Coords[i][1]=Foil_Points[Loop[i]][1]
-
-	return Coords
-
 
 if __name__ == '__main__':
 	main()
