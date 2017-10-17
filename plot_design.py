@@ -17,7 +17,7 @@ def main():
 	# Design path
 	path="./DESIGNS/DSN_{:03d}/".format(design)
 	# Create a folder to store the plots
-	#Results_Folder(design)
+	Results_Folder(design)
 	# Read config
 
 	# To do --- No need to read in config or mesh, the surface_flow
@@ -25,6 +25,8 @@ def main():
 	# the new ones. 
 	# Get all the required data
 	data=Get_Design(path)
+	# Plot the Data
+	Plot_Data(data,design)
 	#print data
 	# Plot the geometric and adjoint sensitivities if available
 	#Plot_Sens(path)
@@ -33,7 +35,7 @@ def main():
 	# Plot the geometry and pressure
 	#Plot_Pressure(path)
 	# Plot the convergence history of the adjoint, Cl and Cd
-	Plot_History(path)
+	#Plot_History(path)
 
 def Results_Folder(design):
 	os.system("mkdir Design"+str(design)+"_Plots")
@@ -44,22 +46,26 @@ def Read_Config(path):
 	return config
 
 def Get_Design(path):
-	pressure=Get_Pressure(path)
+	pressure,coords=Get_Pressure(path)
 	# Check if gradient info is avaiable for this design
 	# Need to generalise this for all Obj_f
 	if os.path.isdir(path+'ADJOINT_DRAG'):
 		path=path+'ADJOINT_DRAG'
 		Sens=Get_Sens(path)
+		Conv=Get_Conv(path)
 	elif os.path.isdir(path+'ADJOINT_LIFT'):
 		path=path+'ADJOINT_LIFT'
 		Sens=Get_Sens(path)
-	data={'pressure':pressure}
+		Conv=Get_Conv(path)
+	data={'pressure':pressure,
+		  'sens':Sens,
+		  'coords':coords
+		  }
 
 	return data
 
 
 def Get_Sens(path):
-	sens_geo=[]
 
 	# Get the Gradient
 	with open(path+'/of_grad_cd.vtk') as f:
@@ -80,14 +86,15 @@ def Get_Sens(path):
 		for row in csvread:
 			sens_adj.append(row[1])
 	# Get the Geometric Sensitivities
-	
+	sens_geo=np.loadtxt(open(path+"/Geo_Sens.csv", "rb"), delimiter=",", skiprows=1)
 
-	#Sens=np.column_stack((sens_geo,sens_adj,sens_grad))
+	Sens={'gradient':sens_grad,
+		  'adjoint':sens_adj,
+		  'geometric':sens_geo}
 
-	return
+	return Sens
 
-def Plot_Grad(path):
-	return
+
 def Get_Pressure(path):
 	with open(path+"DIRECT/surface_flow.csv") as f:
 		csvread=csv.reader(f)
@@ -101,12 +108,59 @@ def Get_Pressure(path):
 			y.append(row[2])
 			pressure.append(row[4])
 		# Merge arrays into a matrix
-		pressure=np.column_stack((x,y,pressure))
-	return pressure
+		coords=np.column_stack((x,y))
+		
+	return pressure,coords
 
+def Get_Conv(path):
+	# Get the convergence history for the drag, lift and adjoint
 	return
-def Plot_History(path):
-	return
+
+def Plot_Data(data,design):
+	# plot the Gradient
+	plt.plot(data['sens']['gradient'],label='Gradient')
+	plt.grid()
+	plt.legend()
+	plt.title('Design Gradient')
+	plt.savefig('Design'+str(design)+'_Plots/Gradients.png',dpi=150)
+	plt.close()
+
+	# plot the adjoint sensitivities
+	plt.plot(data['sens']['adjoint'],label='Adjoint')
+	plt.grid()
+	plt.legend()
+	plt.title('Adjoint Sensitivities')
+	plt.savefig('Design'+str(design)+'_Plots/Adjoints.png',dpi=150)
+	plt.close()
+
+	# plot the Geometric Sensitivities
+	i=0
+	for var in data['sens']['geometric']:
+		plt.plot(var,label='var '+str(i))
+		i+=1
+	plt.legend()
+	plt.title('Geometric Sensitivities')
+	plt.grid()
+	plt.savefig('Design'+str(design)+'_Plots/GeoSens.png',dpi=150)
+	plt.close()
+
+	# Plot the geometry
+	coords=np.transpose(data['coords'])
+	plt.plot(coords[0],coords[1])
+	plt.title('Geometry')
+	plt.grid()
+	plt.savefig('Design'+str(design)+'_Plots/Geometry.png',dpi=150)
+	plt.close()
+
+	# Plot the pressure 
+	
+	plt.plot(coords[0],data['pressure'])
+	plt.title('Lift Cofficient')
+	plt.grid()
+	plt.savefig('Design'+str(design)+'_Plots/Pressure.png',dpi=150)
+	plt.gca().invert_yaxis()
+	plt.show()
+	plt.close()
 
 if __name__ == '__main__':
 	main()
