@@ -157,9 +157,8 @@ def Plot_Data(data,design):
 	plt.plot(coords[0],data['pressure'])
 	plt.title('Lift Cofficient')
 	plt.grid()
-	plt.savefig('Design'+str(design)+'_Plots/Pressure.png',dpi=150)
 	plt.gca().invert_yaxis()
-	plt.show()
+	plt.savefig('Design'+str(design)+'_Plots/Pressure.png',dpi=150)
 	plt.close()
 
 if __name__ == '__main__':

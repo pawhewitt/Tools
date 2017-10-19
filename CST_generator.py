@@ -237,9 +237,12 @@ def Plot(U_Coords,L_Coords,Au,Al,n1,n2):
 	u_coords=np.transpose(U_Coords)
 	l_coords=np.transpose(L_Coords)
 	
-	# Temp Code
-	Al[0]=Al[0]-0.2
-	Al[2]=Al[2]-0.2
+
+	# temp code to see effect of dv_value
+	# dv_value=0.3
+	# Au[3]=Au[3]+dv_value
+	# Al[3]=Al[3]-dv_value
+	# temp code to see effect of dv_value
 
 	CST_Upper=CST(U_Coords,Au,n1,n2)
 	CST_Lower=CST(L_Coords,Al,n1,n2)

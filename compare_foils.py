@@ -1,3 +1,7 @@
+# De-bugging Script to compare the geometries of the fitted CST
+# foil from the python scripts and the mesh produced by SU2_DEF
+
+
 import sys,os
 sys.path.append(os.environ['SU2_RUN'])
 import SU2 # import all the python scripts in /usr/local/SU2_RUN/SU2_PY/SU2
@@ -27,9 +31,10 @@ def main():
 	
 	CST=np.transpose(CST)
 	DEF=np.transpose(DEF)
-	plt.plot(CST[0],CST[1])
-	plt.plot(DEF[0],DEF[1])
-
+	plt.plot(CST[0],CST[1],label='CST')
+	plt.plot(DEF[0],DEF[1],label='SU2_DEF')
+	plt.legend()
+	plt.grid()
 	plt.show()
 
 
