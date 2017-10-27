@@ -8,12 +8,24 @@ from math import factorial as fac
 import matplotlib.pyplot as plt
 from scipy.optimize import fmin_slsqp
 
+# TODO
+
+# Need to modify for the rae case
+# Think that the airfoil coordinates are anti-clockwise
+# in the mesh file rather than clockwise.  
+
+# TODO
+
+
+
+
 def main():
 
 	parser=OptionParser()
 	parser.add_option("-f",dest="filename",default="inv_NACA0012.cfg")
 	parser.add_option("--n1",dest="n1",default="0.5")
 	parser.add_option("--n2",dest="n2",default="1.0")
+	# parser.add_option("--c",dest="fit",default=False)
 	(options, args)=parser.parse_args()
 	
 	filename=options.filename
@@ -69,6 +81,7 @@ def Update_Config(filename,Config,Au,Al,dvs):
 
 def Read_Config(filename):
 	Config=SU2.io.config.Config(filename)
+	print Config
 	#Config_Data=SU2.io.config.read_config(Config
 	return Config
 
@@ -237,13 +250,6 @@ def Plot(U_Coords,L_Coords,Au,Al,n1,n2):
 	u_coords=np.transpose(U_Coords)
 	l_coords=np.transpose(L_Coords)
 	
-
-	# temp code to see effect of dv_value
-	# dv_value=0.3
-	# Au[3]=Au[3]+dv_value
-	# Al[3]=Al[3]-dv_value
-	# temp code to see effect of dv_value
-
 	CST_Upper=CST(U_Coords,Au,n1,n2)
 	CST_Lower=CST(L_Coords,Al,n1,n2)
 
