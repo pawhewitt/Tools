@@ -22,7 +22,7 @@ from scipy.optimize import fmin_slsqp
 def main():
 
 	parser=OptionParser()
-	parser.add_option("-f",dest="filename",default="inv_NACA0012.cfg")
+	parser.add_option("-f",dest="filename")
 	parser.add_option("--n1",dest="n1",default="0.5")
 	parser.add_option("--n2",dest="n2",default="1.0")
 	# parser.add_option("--c",dest="fit",default=False)
@@ -51,11 +51,6 @@ def main():
 	# # plot the points showing how the foils differ and by how much
 
 	Plot(U_Coords,L_Coords,Au,Al,n1,n2)
-	
-
-	# TODO
-	# Why are the x components different in the CST and 
-	# the original foil for the RAE?
 
 	# # re-mesh geometry
 	Re_Mesh(filename)
@@ -81,7 +76,6 @@ def Update_Config(filename,Config,Au,Al,dvs):
 
 def Read_Config(filename):
 	Config=SU2.io.config.Config(filename)
-	print Config
 	#Config_Data=SU2.io.config.read_config(Config
 	return Config
 
@@ -94,17 +88,16 @@ def Read_Mesh(Config):
 	# Using the Su2 python scripts for reading mesh
 	Meshdata=SU2.mesh.tools.read(Mesh) # read the mesh
 
-	# sort airfoil coords to be arrange clockwise from trailing edge
-	Points,Loop=SU2.mesh.tools.sort_airfoil(Meshdata,marker)
-	
 	# get the points for the surface marker
 	Foil_Points,Foil_Nodes=SU2.mesh.tools.get_markerPoints(Meshdata,marker)
 
-	#Get the sorted points 
-	Coords=np.zeros([len(Points),2])
-	for i in range(len(Points)):
-		Coords[i][0]=Foil_Points[Loop[i]][0]
-		Coords[i][1]=Foil_Points[Loop[i]][1]
+	#Get the sorted points
+
+	Coords=np.zeros([len(Foil_Points),2])
+	for i in range(len(Foil_Points)):
+		Coords[i][0]=Foil_Points[i][0]
+		Coords[i][1]=Foil_Points[i][1]
+
 	# Divide coords for surfaces
 	U_Coords,L_Coords=Split(Coords)
 
