@@ -88,10 +88,15 @@ def Get_Sens(path):
 			sens_adj.append(row[1])
 	# Get the Geometric Sensitivities
 	sens_geo=np.loadtxt(open(path+"/Geo_Sens.csv", "rb"), delimiter=",", skiprows=1)
+	# Remove the first element from each Parameter
+	
+	Sens_Geo=np.zeros(shape=(len(sens_geo),(len(sens_geo[0])-1)))
+	for i in range(len(sens_geo)):
+		Sens_Geo[i]=np.delete(sens_geo[i],[0])
 
 	Sens={'gradient':sens_grad,
 		  'adjoint':sens_adj,
-		  'geometric':sens_geo}
+		  'geometric':Sens_Geo}
 
 	return Sens
 
