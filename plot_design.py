@@ -1,4 +1,5 @@
-# CST generator
+# Exports plots of the adjoint, design geometry, geometric sensitivities
+# the gradient and the pressure distribution
 import sys,os
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
