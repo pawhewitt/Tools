@@ -31,7 +31,10 @@ def Main():
 		print "provide file name with -a agrument"
 
 	fig=plt.figure()
-	geom=fig.add_subplot(111,projection="3d")
+	if dim=="3D":
+		geom=fig.add_subplot(111,projection="3d")
+	else:
+		geom="NULL"
 
 	# Plot First Mesh
 	Coords_a=Read_Mesh(a,marker,dim)
