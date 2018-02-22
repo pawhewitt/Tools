@@ -2,10 +2,16 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from optparse import OptionParser
 
 def main():
+
+	parser=OptionParser()
+	parser.add_option("-f",dest="file",help="history file",default="history.vtk")
+	(options,args)=parser.parse_args()
+	file=options.file
 	# Read File
-	hist=np.loadtxt('history.vtk',skiprows=1,delimiter=',')
+	hist=np.loadtxt(file,skiprows=1,delimiter=',')
 	# tranpose data
 	hist=np.transpose(hist)
 	
