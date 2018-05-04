@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 def main():
 
-	coords=np.loadtxt('Initial_Design.txt') # Get coords from File
+	coords=np.loadtxt('/home/phewitt/Dropbox/Opt_Sync/Initial_Design.txt') # Get coords from File
 	fig=plt.figure() # Create figure object
 	geom=fig.add_subplot(111,projection='3d')
 
@@ -17,8 +17,11 @@ def main():
 	
 	else:
 		geom.scatter(coords[0],coords[1],coords[2]) 
-	
+
+	plt.xlabel('x')
+	plt.ylabel('y')
 	plt.show()
+
 
 if __name__ == '__main__':
     main()
