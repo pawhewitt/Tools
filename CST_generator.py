@@ -1,4 +1,9 @@
-# CST generator
+# CST_Fit 
+"""
+Script to fit CST curve to aerofoil coordinates and create a new mesh and config file 
+
+"""
+
 import sys,os
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
@@ -10,9 +15,7 @@ from scipy.optimize import fmin_slsqp
 
 # TODO
 
-# Need to modify for the rae case
-# Think that the airfoil coordinates are anti-clockwise
-# in the mesh file rather than clockwise.  
+# Check this works with the rae case
 
 # TODO
 
@@ -25,37 +28,42 @@ def main():
 	parser.add_option("-f",dest="filename")
 	parser.add_option("--n1",dest="n1",default="0.5")
 	parser.add_option("--n2",dest="n2",default="1.0")
-	# parser.add_option("--c",dest="fit",default=False)
+	# option bug to export data and make plots
+	parser.add_option("--bug",dest="bug",default=True)
+	
 	(options, args)=parser.parse_args()
 	
 	filename=options.filename
 	n1=float(options.n1)
 	n2=float(options.n2)
+	bug=options.bug
+
 	# Read Config 
 	Config=Read_Config(filename)
 	# Order determined by the number of design variables supplied
 	# Note that it's assumed that the order is identical for both surfaces
 	Order=int(0.5*len(Config['DEFINITION_DV']['PARAM'])-1)
 	# read coordinates
-	U_Coords,L_Coords=Read_Mesh(Config) # mesh/DAT filename
+	U_Coords,L_Coords=Read_Mesh(Config) 
 	
 	# compute the coefficients
 	Au,Al=Compute_Coeffs(U_Coords,L_Coords,Order,n1,n2)
-
-	dvs=[0.0]*(len(Au)+len(Al))
 
 	# # Update Config File
 
 	Update_Config(filename,Config,Au,Al,dvs) 
 
+	# Create new mesh file
+	New_Mesh(filename)
+
 	# # plot the points showing how the foils differ and by how much
-
-	Plot(U_Coords,L_Coords,Au,Al,n1,n2)
-
-	# # re-mesh geometry
-	Re_Mesh(filename)
+	if bug==True:	
+		Plot(U_Coords,L_Coords,Au,Al,n1,n2)
 
 def Update_Config(filename,Config,Au,Al,dvs):
+
+	# SU2_DEF requires DV array 
+	dvs=[0.0]*(len(Au)+len(Al))
 
 	Config.unpack_dvs(dvs)
 
@@ -76,7 +84,6 @@ def Update_Config(filename,Config,Au,Al,dvs):
 
 def Read_Config(filename):
 	Config=SU2.io.config.Config(filename)
-	#Config_Data=SU2.io.config.read_config(Config
 	return Config
 
 def Read_Mesh(Config):
@@ -154,6 +161,15 @@ def Comp_Shape(Coords,Order):
 		for j in range(len(Coords)): # point loop
 			S_c[i][j]=(K[i]*(Coords[j][0]**i))*((1-Coords[j][0])**(Order-i))
 	
+	# Temp start
+	# Plot component shapes
+	s_c=np.transpose(S_c)
+	coords=np.transpose(Coords)
+
+	plt.plot(coords[0],s_c)
+	plt.show()
+
+	# Temp end
 	return S_c
 
 def CST(Coords,A,n1,n2): 
@@ -200,9 +216,6 @@ def Split(Coords):
 def Get_Normal(Coords):
 	# Compute the normals
 
-	# TODO 
-	# Clean this up
-
 	Normals=np.zeros([len(Coords),2])
 	for i in range(len(Coords)):
 		if i==0:
@@ -231,11 +244,7 @@ def Get_Normal(Coords):
 
 	return Normals
 
-def Write_File(): 
-	# Write a file containing the coefficients 
-	return
-
-def Re_Mesh(filename): # Mesh the geometry according to the CST approximation.
+def New_Mesh(filename): # Mesh the geometry according to the CST approximation.
 		os.system("SU2_DEF "+filename)
 
 def Plot(U_Coords,L_Coords,Au,Al,n1,n2):

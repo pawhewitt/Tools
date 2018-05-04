@@ -19,12 +19,12 @@ def main():
 	# Create a folder to store the plots
 	Results_Folder(design)
 	# Read config
-
+	config=Read_Config(path)
 	# To do --- No need to read in config or mesh, the surface_flow
 	## file has the coords as well. Check that these coords are actaully 
 	# the new ones. 
 	# Get all the required data
-	data=Get_Design(path)
+	data=Get_Design(path,config)
 	# Plot the Data
 	Plot_Data(data,design)
 	#print data
@@ -45,17 +45,17 @@ def Read_Config(path):
 	config=SU2.io.config.Config(path+"DIRECT/config_CFD.cfg")
 	return config
 
-def Get_Design(path):
+def Get_Design(path,config):
 	pressure,coords=Get_Pressure(path)
 	# Check if gradient info is avaiable for this design
 	# Need to generalise this for all Obj_f
 	if os.path.isdir(path+'ADJOINT_DRAG'):
 		path=path+'ADJOINT_DRAG'
-		Sens=Get_Sens(path)
+		Sens=Get_Sens(path,config)
 		Conv=Get_Conv(path)
 	elif os.path.isdir(path+'ADJOINT_LIFT'):
 		path=path+'ADJOINT_LIFT'
-		Sens=Get_Sens(path)
+		Sens=Get_Sens(path,config)
 		Conv=Get_Conv(path)
 	data={'pressure':pressure,
 		  'sens':Sens,
@@ -65,7 +65,7 @@ def Get_Design(path):
 	return data
 
 
-def Get_Sens(path):
+def Get_Sens(path,config):
 
 	# Get the Gradient
 	with open(path+'/of_grad_cd.vtk') as f:
@@ -75,6 +75,14 @@ def Get_Sens(path):
 		sens_grad=[]
 		for row in csvread:
 			sens_grad.append(row[1])
+	# Sort gradients into surfaces
+		sens_grad_lower=[]
+		sens_grad_upper=[]
+		for i in range(len(sens_grad)):
+			if config['DV_PARAM']['PARAM'][i][0]==0:
+				sens_grad_lower.append(sens_grad[i])
+			else:
+				sens_grad_upper.append(sens_grad[i])
 
 	# Get the Adjoint Sens
 	with open(path+'/surface_adjoint.csv') as f:
@@ -93,7 +101,8 @@ def Get_Sens(path):
 	for i in range(len(sens_geo)):
 		Sens_Geo[i]=np.delete(sens_geo[i],[0])
 
-	Sens={'gradient':sens_grad,
+	Sens={'gradient_lower':sens_grad_lower,
+				'gradient_upper':sens_grad_upper,
 		  'adjoint':sens_adj,
 		  'geometric':Sens_Geo}
 
@@ -123,7 +132,8 @@ def Get_Conv(path):
 
 def Plot_Data(data,design):
 	# plot the Gradient
-	plt.plot(data['sens']['gradient'],label='Gradient')
+	plt.plot(data['sens']['gradient_upper'],label='Gradient_Upper')
+	plt.plot(data['sens']['gradient_lower'],label='Gradient_Lower')
 	plt.grid()
 	plt.legend()
 	plt.title('Design Gradient')
