@@ -13,14 +13,6 @@ from math import factorial as fac
 import matplotlib.pyplot as plt
 from scipy.optimize import fmin_slsqp
 
-# TODO
-
-# Check this works with the rae case
-
-# TODO
-
-
-
 
 def main():
 
@@ -66,14 +58,13 @@ def main():
 	U_Coords,L_Coords,Nodes_Order=Get_Coords(Config) 
 
 	########## compute the fitted weights ########
-	Au,Al=Compute_Coeffs(U_Coords[:,1:3],L_Coords[:,1:3],Order,n1,n2,bug)
+	Au,Al=Compute_Coeffs(U_Coords[:,1:3],L_Coords[:,1:3],Order,n1,n2)
 
 	# ####### Export the mesh motion file ##########
 	Mesh_Motion(n1,n2,Au,Al,U_Coords,L_Coords,Nodes_Order)
 
 	# ###### Create new mesh file ########
 	os.system("SU2_DEF temp_def.cfg")
-
 
 	####### Make config file containing CST Weights and points to CST ######
 
@@ -115,7 +106,9 @@ def main():
 	# and the L2 norm over the chord
 
 	if bug==True:	
-		Plot(U_Coords[:,1:3],L_Coords[:,1:3],Au,Al,n1,n2)
+		L2_v_nDV=nDV_Test(U_Coords[:,1:3],L_Coords[:,1:3],n1,n2)
+
+		Plot(U_Coords[:,1:3],L_Coords[:,1:3],Au,Al,n1,n2,L2_v_nDV)
 
 def Mesh_Motion(n1,n2,Au,Al,U_Coords,L_Coords,Nodes_Order):
 	# Evaluate CST
@@ -152,20 +145,15 @@ def Get_Coords(Config):
 
 	return U_Coords,L_Coords,Nodes_Order
 
-def Compute_Coeffs(U_Coords,L_Coords,Order,n1,n2,bug):
+def Compute_Coeffs(U_Coords,L_Coords,Order,n1,n2):
 	# initial coefficents set for upper (u) and lower (l) surfaces
 	Au=np.ones(Order+1)# one more than the order
 	Al=np.ones(Order+1)*-1 
 	
-	if bug==True:
-		iprint=3
-	else:
-		iprint=0
-
 	# Upper
-	Au=fmin_slsqp(Get_L2,Au,args=(U_Coords,n1,n2),iprint=iprint)
+	Au=fmin_slsqp(Get_L2,Au,args=(U_Coords,n1,n2),iprint=0)
 	# Lower
-	Al=fmin_slsqp(Get_L2,Al,args=(L_Coords,n1,n2),iprint=iprint)
+	Al=fmin_slsqp(Get_L2,Al,args=(L_Coords,n1,n2),iprint=0)
 
 	return Au,Al #,CST_Lower # See how to group this together 
 
@@ -284,7 +272,7 @@ def Get_Normal(Coords):
 
 	return Normals
 
-def Plot(U_Coords,L_Coords,Au,Al,n1,n2):
+def Plot(U_Coords,L_Coords,Au,Al,n1,n2,L2_v_nDV):
 
 
 	u_coords=np.transpose(U_Coords)
@@ -305,7 +293,6 @@ def Plot(U_Coords,L_Coords,Au,Al,n1,n2):
 	plt.plot(cst_upper[0],cst_upper[1],'o',label='CST',color='blue',markersize=5)
 	plt.plot(cst_lower[0],cst_lower[1],'o',color='blue',markersize=5)
 	
-
 	plt.plot(u_coords[0],u_coords[1],label='Baseline',color='green')
 	plt.plot(l_coords[0],l_coords[1],color='green')
 
@@ -369,9 +356,60 @@ def Plot(U_Coords,L_Coords,Au,Al,n1,n2):
 	plt.savefig(filename,dpi=150)
 	plt.close()
 
+	##### Plot the Error over the Chord #####
+
+	fig=plt.figure()
+	ax=fig.add_subplot(1,1,1)
+	L2_U=np.zeros(len(U_Coords))
+	L2_L=np.zeros(len(L_Coords))
+
+	for i in range(len(U_Coords)):
+		L2_U[i]=(U_Coords[i][1]-CST_Upper[i][1])
+
+	for i in range(len(L_Coords)):
+		L2_L[i]=(L_Coords[i][1]-CST_Lower[i][1])
+
+	plt.plot(u_coords[0],L2_U,label='upper surface',color='red')
+	plt.plot(l_coords[0],L2_L,label='lower surface',color='blue')
+	plt.title('Curve Fitting Error')
+	plt.grid()
+	plt.legend()
+	ax.set_xlabel('x/c')
+	ax.set_ylabel('y2-y1 Error')
+	filename='./CST_Error.png'
+	plt.savefig(filename,dpi=150)
+	plt.close()
+
+	#### Plot L2_v_DV ######
+
+	fig=plt.figure()
+	ax=fig.add_subplot(1,1,1)
+	L2_v_nDV=np.transpose(L2_v_nDV)
+	plt.plot(L2_v_nDV[0],L2_v_nDV[1])
+	plt.grid()
+	ax.set_xlabel('Number of Parameters')
+	ax.set_ylabel('L2 Norm')
+	plt.title('Fitting Error verus nDV')
+	filename='./L2_v_nDV.png'
+	plt.savefig(filename,dpi=150)
 
 
-	return
+def nDV_Test(U_Coords,L_Coords,n1,n2):
+	
+	# Upper
+	L2_v_nDV=np.zeros((9,2))
+	for i in range(1,10):
+		Au=np.zeros(i)
+		Al=np.zeros(i)
+		# Upper
+		out1=fmin_slsqp(Get_L2,Au,args=(U_Coords,n1,n2),full_output=1)
+		# Lower
+		out2=fmin_slsqp(Get_L2,Al,args=(L_Coords,n1,n2),full_output=1)
+
+		L2_v_nDV[i-1][0]=i*2
+		L2_v_nDV[i-1][1]=out1[1]+out2[1]
+
+	return L2_v_nDV
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
     main()
